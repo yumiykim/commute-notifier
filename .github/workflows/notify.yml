@@ -1,0 +1,78 @@
+name: Commute notification
+on:
+  schedule:
+    # UTC 21:00 = 다음 날 한국 시간 06:00 (한국 월~금)
+    - cron: '0 21 * * 0-4'
+    # UTC 11:00 = 한국 시간 20:00 (한국 일~목)
+    - cron: '0 11 * * 0-4'
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 발송 구분
+        type: choice
+        options: [morning, evening]
+        default: evening
+      date:
+        description: 등교일 YYYY-MM-DD (비우면 자동 결정)
+        required: false
+      send:
+        description: 디스코드 실제 발송 (해제하면 계산만)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: commute-notification
+  cancel-in-progress: false
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SEOUL_API_KEY: ${{ secrets.SEOUL_API_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      ALLOW_HTTP_SEOUL: 'true'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Restore delivery history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/restore_delivery_state.py
+      - name: Calculate and notify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_SLOT: ${{ inputs.slot }}
+          INPUT_DATE: ${{ inputs.date }}
+          INPUT_SEND: ${{ inputs.send }}
+        shell: bash
+        run: |
+          args=()
+          if [[ "$EVENT_NAME" == "schedule" ]]; then
+            if [[ "$SCHEDULE" == "0 21 * * 0-4" ]]; then
+              slot=morning
+            else
+              slot=evening
+            fi
+            args+=(--send --scheduled)
+          else
+            slot="$INPUT_SLOT"
+            if [[ -n "$INPUT_DATE" ]]; then args+=(--date "$INPUT_DATE"); fi
+            if [[ "$INPUT_SEND" == "true" ]]; then args+=(--send); fi
+          fi
+          python manage.py notify_commute --slot "$slot" "${args[@]}"
+      - name: Preserve delivery history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: delivery-state
+          path: .state/deliveries.json
+          retention-days: 30
+          include-hidden-files: true
+          if-no-files-found: ignore

@@ -1,0 +1,26 @@
+{
+  "line5": [
+    {
+      "train_id": "DEMO-5A",
+      "departure": 33000,
+      "arrival": 34200
+    },
+    {
+      "train_id": "DEMO-5B",
+      "departure": 33300,
+      "arrival": 34500
+    }
+  ],
+  "line3": [
+    {
+      "train_id": "DEMO-3A",
+      "departure": 34440,
+      "arrival": 34800
+    },
+    {
+      "train_id": "DEMO-3B",
+      "departure": 34740,
+      "arrival": 35100
+    }
+  ]
+}
