@@ -2,7 +2,7 @@ import os
 from datetime import date, datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from commute.calendar import SEOUL, target_day, load_calendar, day_settings
+from commute.calendar import SEOUL, target_day, load_calendar, day_settings, load_semester
 from commute.delivery import DeliveryLedger
 from commute.discord import send_message
 from commute.messages import build_message
@@ -27,9 +27,10 @@ class Command(BaseCommand):
                     raise CommandError("예약 실행이 허용 시간대를 벗어나 잘못된 날짜 안내를 방지하기 위해 중단합니다.")
             day = date.fromisoformat(options["date"]) if options["date"] else target_day(now, options["slot"], options["scheduled"])
             config = load_calendar(settings.BASE_DIR / "calendar.json")
-            start, week_tag = day_settings(day, config)
+            semester = load_semester(settings.BASE_DIR / "semester.json")
+            start, week_tag = day_settings(day, config, semester)
             if start is None:
-                self.stdout.write(f"{day}: 주말·공휴일·휴강일로 발송 생략")
+                self.stdout.write(f"{day}: 수업 없는 날·공휴일·휴강일로 발송 생략")
                 return
             deadline = start - 600
             if options["send"] and (day < now.date() or (day == now.date() and now.hour * 3600 + now.minute * 60 + now.second >= deadline)):
@@ -41,10 +42,11 @@ class Command(BaseCommand):
                 return
             client = SeoulClient(os.getenv("SEOUL_API_KEY", ""), os.getenv("ALLOW_HTTP_SEOUL", "false").lower() == "true")
             first, second = client.route(week_tag)
-            latest = plan(first, second, deadline)
-            recommended = plan(first, second, deadline - 180)
-            content = build_message(day, start, recommended[0] if recommended else None,
-                                    latest[0] if latest else None, datetime.now(SEOUL), options["slot"])
+            cases = {}
+            for minutes in (3, 2):
+                journeys = plan(first, second, deadline, transfer_seconds=minutes * 60)
+                cases[minutes] = journeys[0] if journeys else None
+            content = build_message(day, semester["name"], cases, datetime.now(SEOUL), options["slot"])
             self.stdout.write(content)
             if options["send"]:
                 if not os.getenv("DISCORD_WEBHOOK_URL"):

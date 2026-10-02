@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from urllib.error import URLError
-from commute.calendar import day_settings, target_day
+from commute.calendar import day_settings, target_day, load_semester
 from commute.delivery import DeliveryLedger
 from commute.seoul import SeoulClient, SeoulError, join_trains, seconds
 
@@ -28,11 +28,11 @@ class LiveTests(TestCase):
 
     def test_holiday_override_uses_holiday_timetable(self):
         day = date(2026, 10, 9)
-        self.assertEqual(day_settings(day, {}), (None, 3))
-        self.assertEqual(day_settings(day, {"class_overrides": {"2026-10-09": "10:00:00"}}), (36000, 3))
+        self.assertEqual(day_settings(day, {}, {"weekly_classes": {}}), (None, 3))
+        self.assertEqual(day_settings(day, {"class_overrides": {"2026-10-09": "10:00:00"}}, {"weekly_classes": {}}), (36000, 3))
 
     def test_skip_overrides_class(self):
-        self.assertIsNone(day_settings(date(2026, 10, 6), {"skip_dates": ["2026-10-06"]})[0])
+        self.assertIsNone(day_settings(date(2026, 10, 6), {"skip_dates": ["2026-10-06"]}, {"weekly_classes": {}})[0])
 
     def test_evening_crosses_year_boundary(self):
         now = datetime(2026, 12, 31, 11, tzinfo=timezone.utc)
@@ -69,3 +69,11 @@ class LiveTests(TestCase):
     def test_delayed_evening_uses_same_commute_day(self):
         now = datetime(2026, 10, 5, 16, tzinfo=timezone.utc)  # 한국 10/6 01시
         self.assertEqual(target_day(now, "evening", scheduled=True), date(2026, 10, 6))
+
+    def test_semester_rejects_bad_time(self):
+        import json
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "semester.json"
+            path.write_text(json.dumps({"name": "26-2", "weekly_classes": {str(i): "25:00:00" for i in range(7)}}), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                load_semester(path)

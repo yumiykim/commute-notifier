@@ -19,10 +19,12 @@ class Journey:
     line3: Leg
     exit_arrival: int
 
-def class_start(day: date) -> int | None:
-    if day.weekday() >= 5:
+def class_start(day: date, weekly_classes: dict) -> int | None:
+    value = weekly_classes.get(str(day.weekday()))
+    if value is None:
         return None
-    return (13 if day.weekday() == 4 else 10) * 3600
+    hours, minutes, secs = map(int, value.split(":"))
+    return hours * 3600 + minutes * 60 + secs
 
 def plan(line5: list[Leg], line3: list[Leg], deadline: int,
          transfer_seconds: int = 180, exit_seconds: int = 120) -> list[Journey]:
