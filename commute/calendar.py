@@ -7,6 +7,15 @@ from commute.planner import class_start
 
 SEOUL = ZoneInfo("Asia/Seoul")
 
+def scheduled_slot(now):
+    """실행 시각으로 발송 슬롯을 결정해 지연된 예약도 올바른 날짜를 사용한다."""
+    hour = now.astimezone(SEOUL).hour
+    if hour >= 20 or hour < 6:
+        return "evening"
+    if hour < 13:
+        return "morning"
+    return None
+
 def target_day(now, slot, scheduled=False):
     local = now.astimezone(SEOUL)
     today = local.date()

@@ -2,7 +2,7 @@ import os
 from datetime import date, datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from commute.calendar import SEOUL, target_day, load_calendar, day_settings, load_semester
+from commute.calendar import SEOUL, target_day, load_calendar, day_settings, load_semester, scheduled_slot
 from commute.delivery import DeliveryLedger
 from commute.discord import send_message
 from commute.messages import build_message
@@ -13,7 +13,7 @@ class Command(BaseCommand):
     help = "실제 시간표 계산. 기본은 미리보기이며 --send를 지정해야 디스코드에 발송합니다."
 
     def add_arguments(self, parser):
-        parser.add_argument("--slot", choices=["morning", "evening"], required=True)
+        parser.add_argument("--slot", choices=["morning", "evening", "auto"], required=True)
         parser.add_argument("--date", help="조회할 등교일 YYYY-MM-DD. 생략하면 슬롯 기준 자동 결정")
         parser.add_argument("--send", action="store_true")
         parser.add_argument("--scheduled", action="store_true", help="예약 실행 지연 감지")
@@ -21,6 +21,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             now = datetime.now(SEOUL)
+            if options["slot"] == "auto":
+                if options["date"]:
+                    raise CommandError("auto 슬롯에는 날짜를 지정할 수 없습니다.")
+                options["scheduled"] = True
+                options["slot"] = scheduled_slot(now)
+                if options["slot"] is None:
+                    self.stdout.write("발송 시간대가 아니므로 생략")
+                    return
             if options["scheduled"]:
                 slot = options["slot"]
                 if (slot == "evening" and 6 <= now.hour < 20) or (slot == "morning" and (now.hour < 6 or now.hour >= 13)):
@@ -34,6 +42,9 @@ class Command(BaseCommand):
                 return
             deadline = start - 600
             if options["send"] and (day < now.date() or (day == now.date() and now.hour * 3600 + now.minute * 60 + now.second >= deadline)):
+                if options["scheduled"]:
+                    self.stdout.write(f"{day}: 도착 마감이 지나 발송 생략")
+                    return
                 raise CommandError("도착 마감이 지난 등교 안내는 발송하지 않습니다.")
             ledger = DeliveryLedger(settings.BASE_DIR / ".state" / "deliveries.json")
             delivery_key = f"{day}:{options['slot']}"
@@ -46,7 +57,8 @@ class Command(BaseCommand):
             for minutes in (3, 2):
                 journeys = plan(first, second, deadline, transfer_seconds=minutes * 60)
                 cases[minutes] = journeys[0] if journeys else None
-            content = build_message(day, semester["name"], cases, datetime.now(SEOUL), options["slot"])
+            display_slot = "morning" if day == now.date() else options["slot"]
+            content = build_message(day, semester["name"], cases, datetime.now(SEOUL), display_slot)
             self.stdout.write(content)
             if options["send"]:
                 if not os.getenv("DISCORD_WEBHOOK_URL"):

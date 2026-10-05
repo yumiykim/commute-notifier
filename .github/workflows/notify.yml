@@ -5,6 +5,11 @@ on:
     - cron: '0 21 * * 0-4'
     # UTC 11:00 = 한국 시간 20:00 (한국 일~목)
     - cron: '0 11 * * 0-4'
+    # 누락·지연 시 20분 간격 재확인. 실제 실행 시각으로 발송 슬롯 결정.
+    # 한국 일~목 20시부터 다음 날 09시까지
+    - cron: '17,37,57 11-23 * * 0-4'
+    # 한국 월~금 09~12시 (수업별 도착 마감 이후에는 생략)
+    - cron: '17,37,57 0-3 * * 1-5'
   workflow_dispatch:
     inputs:
       slot:
@@ -47,7 +52,6 @@ jobs:
       - name: Calculate and notify
         env:
           EVENT_NAME: ${{ github.event_name }}
-          SCHEDULE: ${{ github.event.schedule }}
           INPUT_SLOT: ${{ inputs.slot }}
           INPUT_DATE: ${{ inputs.date }}
           INPUT_SEND: ${{ inputs.send }}
@@ -55,11 +59,7 @@ jobs:
         run: |
           args=()
           if [[ "$EVENT_NAME" == "schedule" ]]; then
-            if [[ "$SCHEDULE" == "0 21 * * 0-4" ]]; then
-              slot=morning
-            else
-              slot=evening
-            fi
+            slot=auto
             args+=(--send --scheduled)
           else
             slot="$INPUT_SLOT"
