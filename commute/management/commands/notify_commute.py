@@ -6,7 +6,7 @@ from commute.calendar import SEOUL, target_day, load_calendar, day_settings, loa
 from commute.delivery import DeliveryLedger
 from commute.discord import send_message
 from commute.messages import build_message
-from commute.planner import plan
+from commute.timing import load_commute, calculate_cases
 from commute.seoul import SeoulClient, SeoulError
 
 class Command(BaseCommand):
@@ -51,14 +51,12 @@ class Command(BaseCommand):
             if options["send"] and delivery_key in ledger.entries:
                 self.stdout.write("이미 발송했거나 발송 여부가 불확실한 안내: 재발송 생략")
                 return
+            movement = load_commute(settings.BASE_DIR / "commute.json")
             client = SeoulClient(os.getenv("SEOUL_API_KEY", ""), os.getenv("ALLOW_HTTP_SEOUL", "false").lower() == "true")
             first, second = client.route(week_tag)
-            cases = {}
-            for minutes in (3, 2):
-                journeys = plan(first, second, deadline, transfer_seconds=minutes * 60)
-                cases[minutes] = journeys[0] if journeys else None
+            cases = calculate_cases(first, second, deadline, movement)
             display_slot = "morning" if day == now.date() else options["slot"]
-            content = build_message(day, semester["name"], cases, datetime.now(SEOUL), display_slot)
+            content = build_message(day, semester["name"], cases, datetime.now(SEOUL), display_slot, movement)
             self.stdout.write(content)
             if options["send"]:
                 if not os.getenv("DISCORD_WEBHOOK_URL"):

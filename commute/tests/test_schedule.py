@@ -24,6 +24,7 @@ class ScheduleTests(TestCase):
 
     def run_auto(self, now, folder, client, sender):
         base = Path(folder)
+        (base / "commute.json").write_text(json.dumps({'measurement_date': '2026-10-06', 'applied_date': '2026-10-06', 'home_to_entrance_seconds': 600, 'entrance_to_platform_seconds': 120, 'early_train_seconds': 60, 'preferred_transfer_seconds': 210, 'comparison_transfer_seconds': 120, 'exit_walk_seconds': 120}), encoding="utf-8")
         (base / "calendar.json").write_text("{}", encoding="utf-8")
         (base / "semester.json").write_text(json.dumps({"name": "26-2", "weekly_classes":
             {str(i): "13:00:00" if i == 4 else "10:00:00" if i < 4 else None for i in range(7)}}), encoding="utf-8")

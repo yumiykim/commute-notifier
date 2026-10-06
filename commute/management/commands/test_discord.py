@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from commute.calendar import SEOUL, day_settings, load_calendar, load_semester
 from commute.discord import send_message
 from commute.messages import build_message
-from commute.planner import plan
+from commute.timing import load_commute, calculate_cases
 from commute.seoul import SeoulClient
 
 class Command(BaseCommand):
@@ -25,13 +25,11 @@ class Command(BaseCommand):
                 start, tag = day_settings(day, calendar, semester)
                 if start is None:
                     raise ValueError("예시 등교일에 수업이 없습니다. --date로 수업 날짜를 지정하세요.")
+                movement = load_commute(settings.BASE_DIR / "commute.json")
                 client = SeoulClient(os.getenv("SEOUL_API_KEY", ""), os.getenv("ALLOW_HTTP_SEOUL", "false").lower() == "true")
                 first, second = client.route(tag)
-                cases = {}
-                for minutes in (3, 2):
-                    journeys = plan(first, second, start - 600, transfer_seconds=minutes * 60)
-                    cases[minutes] = journeys[0] if journeys else None
-                content = "-# 테스트 메시지 · 표시 확인용\n\n" + build_message(day, semester["name"], cases, datetime.now(SEOUL), "morning")
+                cases = calculate_cases(first, second, start - 600, movement)
+                content = "-# 테스트 메시지 · 표시 확인용\n\n" + build_message(day, semester["name"], cases, datetime.now(SEOUL), "morning", movement)
             send_message(os.getenv("DISCORD_WEBHOOK_URL", ""), content)
         except (ValueError, RuntimeError, OSError) as error:
             raise CommandError(str(error)) from None

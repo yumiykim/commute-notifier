@@ -1,0 +1,41 @@
+{
+  "measurement_date": "2026-10-06",
+  "applied_date": "2026-10-06",
+  "conditions": {
+    "walking_pace": "빠른 걸음·경보",
+    "mapo_entrance": "마포역 3번출구 지상 입구",
+    "transfer_start": "종로3가역 5호선 하차 순간",
+    "transfer_end": "3호선 승강장 도착"
+  },
+  "measurements": {
+    "train_early_arrival": {
+      "approximate_seconds": 40,
+      "applied_seconds": 60,
+      "note": "공식 09:28:00 열차가 약 09:27:20 도착. 네이버지도는 09:27 표시"
+    },
+    "home_to_entrance": {
+      "approximate_seconds": 360,
+      "applied_seconds": 600
+    },
+    "entrance_to_platform": {
+      "approximate_seconds": 90,
+      "applied_seconds": 120
+    },
+    "transfer_to_platform": {
+      "measured_seconds": 165,
+      "reference_rounded_seconds": 180
+    },
+    "extra_walk_to_car_5_2": {
+      "measured_seconds": 34
+    },
+    "transfer_to_car_5_2": {
+      "measured_seconds": 199,
+      "applied_seconds": 210
+    }
+  },
+  "unmeasured_assumptions": {
+    "fast_transfer_seconds": 120,
+    "exit_walk_seconds": 120,
+    "note": "빠른 환승 2분은 사용자 선택으로 유지한 계산 조건이며 현장 측정값 2분 45초보다 짧음. 기본 추천은 5-2까지 3분 30초. 출구 도보 2분은 기존 기준 유지."
+  }
+}
