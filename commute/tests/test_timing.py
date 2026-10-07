@@ -9,14 +9,14 @@ from commute.tests.test_messages import SETTINGS
 class TimingTests(TestCase):
     def test_exact_seconds_preserved_and_action_minutes_floor(self):
         actions = action_times(9*3600+28*60+30, SETTINGS)
-        self.assertEqual(actions.platform_ready, 9*3600+27*60+30)
-        self.assertEqual(minute_clock(actions.platform_ready), "09:27")
-        self.assertEqual(minute_clock(actions.entrance_arrival), "09:25")
-        self.assertEqual(minute_clock(actions.home_departure), "09:15")
+        self.assertEqual(actions.platform_ready, 9*3600+26*60+30)
+        self.assertEqual(minute_clock(actions.platform_ready), "09:26")
+        self.assertEqual(minute_clock(actions.entrance_arrival), "09:24")
+        self.assertEqual(minute_clock(actions.home_departure), "09:14")
 
     def test_actions_before_midnight_show_previous_day(self):
         actions = action_times(300, SETTINGS)
-        self.assertEqual(minute_clock(actions.home_departure), "전날 23:52")
+        self.assertEqual(minute_clock(actions.home_departure), "전날 23:51")
 
     def test_transfer_210_boundary_selects_latest_feasible_train(self):
         first = [Leg("earlier", 8*3600, 9*3600), Leg("later", 8*3600+300, 9*3600+30)]

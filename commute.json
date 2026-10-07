@@ -1,9 +1,9 @@
 {
-  "measurement_date": "2026-10-06",
-  "applied_date": "2026-10-06",
+  "measurement_date": "2026-10-07",
+  "applied_date": "2026-10-07",
   "home_to_entrance_seconds": 600,
   "entrance_to_platform_seconds": 120,
-  "early_train_seconds": 60,
+  "early_train_seconds": 120,
   "preferred_transfer_seconds": 210,
   "comparison_transfer_seconds": 120,
   "exit_walk_seconds": 120

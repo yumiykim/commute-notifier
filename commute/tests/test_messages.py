@@ -5,7 +5,7 @@ from commute.messages import build_message
 from commute.planner import Journey, Leg
 from commute.timing import CommuteSettings
 
-SETTINGS = CommuteSettings("2026-10-06", "2026-10-06", 600, 120, 60, 210, 120, 120)
+SETTINGS = CommuteSettings("2026-10-07", "2026-10-07", 600, 120, 120, 210, 120, 120)
 
 def journey(departure=34080, transfer=34980):
     return Journey(Leg("5", departure, 34720), Leg("3", transfer, 35130), 35250)
@@ -17,8 +17,8 @@ class MessageTests(TestCase):
 
     def test_identical_route_still_shows_both_details_and_preferred_action_times(self):
         message = self.render(journey(), journey())
-        self.assertIn("집 출발 09:15 · 마포역 3번출구 09:25까지", message)
-        self.assertIn("승강장 탑승 준비 09:27까지", message)
+        self.assertIn("집 출발 09:14 · 마포역 3번출구 09:24까지", message)
+        self.assertIn("승강장 탑승 준비 09:26까지", message)
         self.assertIn("공식 열차 시각 **09:28:00**", message)
         self.assertIn("기본 추천 · 환승 3분 30초", message)
         self.assertIn("빠른 환승 · 환승 2분", message)
@@ -27,7 +27,7 @@ class MessageTests(TestCase):
 
     def test_different_routes_keep_both_details_and_base_summary_on_preferred(self):
         message = self.render(journey(33900), journey())
-        self.assertIn("집 출발 09:12", message)
+        self.assertIn("집 출발 09:11", message)
         self.assertIn("공식 열차 시각 **09:25:00**", message)
         self.assertEqual(message.count("충무로역 1번출구"), 2)
         self.assertIn("빠른 환승 · 환승 2분", message)
